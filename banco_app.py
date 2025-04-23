@@ -135,10 +135,28 @@ if not st.session_state.logged_user:
     # --- Cadastro de Usuário ---
     if menu == "Cadastro":
         custom_subheader("📋 Cadastro de Usuário")
-        reg_name = st.text_input("Nome")
-        reg_cpf = st.text_input("CPF")
-        reg_email = st.text_input("Email")
-        reg_password = st.text_input("Senha", type="password")
+        
+        # Limpar campos ao entrar na tela de cadastro
+        if "reg_name" not in st.session_state:
+            st.session_state.reg_name = ""
+        if "reg_cpf" not in st.session_state:
+            st.session_state.reg_cpf = ""
+        if "reg_email" not in st.session_state:
+            st.session_state.reg_email = ""
+        if "reg_password" not in st.session_state:
+            st.session_state.reg_password = ""
+
+        # Captura os valores dos campos diretamente do session_state
+        reg_name = st.text_input("Nome", value=st.session_state.reg_name)
+        reg_cpf = st.text_input("CPF", value=st.session_state.reg_cpf)
+        reg_email = st.text_input("Email", value=st.session_state.reg_email)
+        reg_password = st.text_input("Senha", type="password", value=st.session_state.reg_password)
+
+        # Atualiza o session_state com os novos valores
+        st.session_state.reg_name = reg_name
+        st.session_state.reg_cpf = reg_cpf
+        st.session_state.reg_email = reg_email
+        st.session_state.reg_password = reg_password
 
         if st.button("Cadastrar"):
             if find_user(reg_email):
@@ -160,6 +178,11 @@ if not st.session_state.logged_user:
                     "password": hash_password(reg_password)
                 })
                 st.success("Cadastro realizado com sucesso!")
+                # Limpa os campos após o cadastro
+                st.session_state.reg_name = ""
+                st.session_state.reg_cpf = ""
+                st.session_state.reg_email = ""
+                st.session_state.reg_password = ""
 
     # --- Login de Usuário ---
     elif menu == "Login":
