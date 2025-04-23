@@ -19,7 +19,7 @@
 
 Uma aplicação básica de banco digital. O sistema permitirá que usuários realizem operações como cadastro, login, consulta de saldo, saques, depósitos, transferências e visualização de extrato. Esses requisitos serão usados na próxima etapa do projeto para o desenvolvimento e testes do sistema.
 
-
+Requisitos: biblioteca streamlit precisa estar instalada para o front-end funcionar.
 
 Comando de execução: python -m streamlit run banco_app.py
 
