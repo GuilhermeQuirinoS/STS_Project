@@ -248,7 +248,31 @@ if st.session_state.logged_user:
             st.info("Nenhuma transação registrada.")
 
     elif page == "Editar Perfil":
-        custom_subheader("🛠️ Em breve: Edição de Perfil")
+        custom_subheader("✏️ Editar Perfil")
+        new_name = st.text_input("Novo Nome", value=user["name"])
+        new_email = st.text_input("Novo Email", value=user["email"])
+        current_password = st.text_input("Senha Atual", type="password")
+        new_password = st.text_input("Nova Senha", type="password")
+
+        if st.button("Salvar Alterações"):
+            if not new_name.strip() or not new_email.strip():
+                st.warning("Nome e email são obrigatórios.")
+            elif user["password"] != hash_password(current_password):
+                st.error("Senha atual incorreta.")
+            elif not validar_nome(new_name):
+                st.error("Nome inválido.")
+            elif new_email != user["email"] and find_user(new_email):
+                st.warning("Email já cadastrado.")
+            elif not validar_email(new_email):
+                st.warning("Email inválido. Verifique o formato.")
+            elif new_password and current_password == new_password:
+                st.warning("Senha nova não pode ser igual a anterior.")
+            else:
+                user["name"] = new_name
+                user["email"] = new_email
+                if new_password:
+                    user["password"] = hash_password(new_password)
+                st.success("Perfil atualizado com sucesso!")
 
     elif page == "Sair":
         st.session_state.logged_user = None
