@@ -172,7 +172,7 @@ if not st.session_state.logged_user:
             if find_user(reg_email):
                 st.warning("Email já cadastrado.")
             elif not validar_nome(reg_name):
-                st.warning("Nome inválido. Use apenas letras e espaços.")
+                st.warning("Nome inválido.")
             elif any(u["cpf"] == reg_cpf for u in users):  # Verifica se o CPF já está cadastrado
                 st.warning("CPF já cadastrado.")
             elif not (reg_name and reg_cpf and reg_email and reg_password):
@@ -285,6 +285,16 @@ if st.session_state.logged_user:
         if st.button("Salvar Alterações"):
             if user["password"] != hash_password(current_password):
                 st.error("Senha atual incorreta.")
+            elif not validar_nome(new_name):
+                st.error("Nome inválido.")
+            elif find_user(new_email):
+                st.warning("Email já cadastrado.")
+            elif not validar_email(new_email):
+                st.warning("Email inválido. Verifique o formato.")
+            elif not (new_name and new_email and current_password and new_password):
+                st.warning("Preencha todos os campos.")
+            elif  current_password == new_password:
+                st.warning("Senha nova não pode ser igual a anterior.")
             else:
                 user["name"] = new_name
                 user["email"] = new_email
