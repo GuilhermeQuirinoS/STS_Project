@@ -74,6 +74,11 @@ def record_login_attempt(email, success):
 
 # --- Função para validar CPF ---
 def validar_cpf(cpf):
+
+    # Checar se o formato está correto
+    if not re.fullmatch(r'\d{3}\.\d{3}\.\d{3}-\d{2}', cpf):
+        return False
+
     # Remover caracteres não numéricos
     cpf = re.sub(r'[^0-9]', '', cpf)
 
@@ -148,7 +153,7 @@ if not st.session_state.logged_user:
 
         # Captura os valores dos campos diretamente do session_state
         reg_name = st.text_input("Nome", value=st.session_state.reg_name)
-        reg_cpf = st.text_input("CPF", value=st.session_state.reg_cpf)
+        reg_cpf = st.text_input("CPF (Formato: 111.111.111-11)", value=st.session_state.reg_cpf)
         reg_email = st.text_input("Email", value=st.session_state.reg_email)
         reg_password = st.text_input("Senha", type="password", value=st.session_state.reg_password)
 
