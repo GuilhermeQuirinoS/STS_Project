@@ -16,6 +16,9 @@ if "login_attempts" not in st.session_state:
 if "logged_user" not in st.session_state:
     st.session_state.logged_user = None
 
+if "menu" not in st.session_state:
+    st.session_state.menu = "Login"
+
 # --- Referências locais para facilitar ---
 users = st.session_state.users
 transactions = st.session_state.transactions
@@ -72,81 +75,47 @@ def record_login_attempt(email, success):
             data["blocked_until"] = datetime.now() + timedelta(minutes=5)
         login_attempts[email] = data
 
-# --- Função para validar CPF ---
 def validar_cpf(cpf):
-
-    # Checar se o formato está correto
     if not re.fullmatch(r'\d{3}\.\d{3}\.\d{3}-\d{2}', cpf):
         return False
-
-    # Remover caracteres não numéricos
     cpf = re.sub(r'[^0-9]', '', cpf)
-
-    # Verificar se o CPF tem 11 dígitos
-    if len(cpf) != 11:
+    if len(cpf) != 11 or cpf == cpf[0] * len(cpf):
         return False
-
-    # Validar se o CPF não é uma sequência repetida (ex: 11111111111)
-    if cpf == cpf[0] * len(cpf):
-        return False
-
-    # Validação do primeiro dígito verificador
-    soma = 0
-    for i in range(9):
-        soma += int(cpf[i]) * (10 - i)
+    soma = sum(int(cpf[i]) * (10 - i) for i in range(9))
     digito1 = (soma * 10) % 11
-    if digito1 == 10 or digito1 == 11:
-        digito1 = 0
-    if digito1 != int(cpf[9]):
-        return False
-
-    # Validação do segundo dígito verificador
-    soma = 0
-    for i in range(10):
-        soma += int(cpf[i]) * (11 - i)
+    if digito1 == 10: digito1 = 0
+    if digito1 != int(cpf[9]): return False
+    soma = sum(int(cpf[i]) * (11 - i) for i in range(10))
     digito2 = (soma * 10) % 11
-    if digito2 == 10 or digito2 == 11:
-        digito2 = 0
-    if digito2 != int(cpf[10]):
-        return False
+    if digito2 == 10: digito2 = 0
+    return digito2 == int(cpf[10])
 
-    return True
-
-# --- Função para validar Email ---
 def validar_email(email):
-    regex_email = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
-    return re.match(regex_email, email)
+    return re.match(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$', email)
 
-# --- Função para validar Nome ---
 def validar_nome(nome):
-    # O nome deve ter apenas letras (com acentos) e espaços, e ao menos 2 caracteres
     return re.fullmatch(r"[A-Za-zÀ-ÿ\s]{2,}", nome.strip()) is not None
 
 # --- Interface Streamlit ---
 st.set_page_config(page_title="Banco Digital", layout="centered")
 custom_title("🏦 Sistema Bancário Digital Simplificado")
 
-# --- Se o usuário não estiver logado, exibe menu de login/cadastro ---
+# --- Menu principal (Login ou Cadastro) ---
 if not st.session_state.logged_user:
-    menu = st.sidebar.selectbox("Menu", ["Login", "Cadastro"], label_visibility="collapsed")
+    st.session_state.menu = st.sidebar.selectbox("Menu", ["Login", "Cadastro"], index=["Login", "Cadastro"].index(st.session_state.menu), label_visibility="collapsed")
 
-    # Customizando o CSS para ocultar a caixa de texto no selectbox
-    st.markdown(
-        """
+    st.markdown("""
         <style>
         .css-1p4b5jv {
             pointer-events: none;
             opacity: 1;
         }
         </style>
-        """, unsafe_allow_html=True
-    )
+    """, unsafe_allow_html=True)
 
-    # --- Cadastro de Usuário ---
-    if menu == "Cadastro":
+    if st.session_state.menu == "Cadastro":
         custom_subheader("📋 Cadastro de Usuário")
-        
-        # Limpar campos ao entrar na tela de cadastro
+
         if "reg_name" not in st.session_state:
             st.session_state.reg_name = ""
         if "reg_cpf" not in st.session_state:
@@ -156,13 +125,11 @@ if not st.session_state.logged_user:
         if "reg_password" not in st.session_state:
             st.session_state.reg_password = ""
 
-        # Captura os valores dos campos diretamente do session_state
         reg_name = st.text_input("Nome", value=st.session_state.reg_name)
         reg_cpf = st.text_input("CPF (Formato: xxx.xxx.xxx-xx)", value=st.session_state.reg_cpf)
         reg_email = st.text_input("Email", value=st.session_state.reg_email)
         reg_password = st.text_input("Senha", type="password", value=st.session_state.reg_password)
 
-        # Atualiza o session_state com os novos valores
         st.session_state.reg_name = reg_name
         st.session_state.reg_cpf = reg_cpf
         st.session_state.reg_email = reg_email
@@ -173,31 +140,37 @@ if not st.session_state.logged_user:
                 st.warning("Email já cadastrado.")
             elif not validar_nome(reg_name):
                 st.warning("Nome inválido.")
-            elif any(u["cpf"] == reg_cpf for u in users):  # Verifica se o CPF já está cadastrado
+            elif any(u["cpf"] == reg_cpf for u in users):
                 st.warning("CPF já cadastrado.")
             elif not (reg_name and reg_cpf and reg_email and reg_password):
                 st.warning("Preencha todos os campos.")
             elif not validar_cpf(reg_cpf):
-                st.warning("CPF inválido. Verifique o formato.")
+                st.warning("CPF inválido.")
             elif not validar_email(reg_email):
-                st.warning("Email inválido. Verifique o formato.")
+                st.warning("Email inválido.")
             else:
                 users.append({
                     "id": len(users) + 1,
-                    "name": reg_name,
+                    "name": reg_name.lower(),
                     "cpf": reg_cpf,
-                    "email": reg_email,
+                    "email": reg_email.lower(),
                     "password": hash_password(reg_password)
                 })
                 st.success("Cadastro realizado com sucesso!")
-                # Limpa os campos após o cadastro
                 st.session_state.reg_name = ""
                 st.session_state.reg_cpf = ""
                 st.session_state.reg_email = ""
                 st.session_state.reg_password = ""
 
-    # --- Login de Usuário ---
-    elif menu == "Login":
+                # Limpa os campos de login
+                st.session_state.login_email = ""
+                st.session_state.login_password = ""
+
+                # Redireciona para tela de login
+                st.session_state.menu = "Login"
+                st.rerun()
+
+    elif st.session_state.menu == "Login":
         custom_subheader("🔐 Login")
         login_email = st.text_input("Email")
         login_password = st.text_input("Senha", type="password")
@@ -206,7 +179,7 @@ if not st.session_state.logged_user:
             if lockout_check(login_email):
                 st.error("Conta bloqueada por 5 minutos após 5 tentativas inválidas.")
             else:
-                user = verify_login(login_email, login_password)
+                user = verify_login(login_email.lower(), login_password)
                 record_login_attempt(login_email, user is not None)
                 if user:
                     st.session_state.logged_user = user
@@ -230,22 +203,22 @@ if st.session_state.logged_user:
         value = st.number_input("Valor do depósito", min_value=0.00)
         if st.button("Confirmar Depósito"):
             if value < 0.01:
-                st.error("Por favor, insira um valor válido para o depósito.")
+                st.error("Valor inválido.")
             else:
                 record_transaction(user["id"], value, "depósito")
-                st.success("Depósito realizado com sucesso!")
+                st.success("Depósito realizado!")
 
     elif page == "Sacar":
         custom_subheader("➖ Saque")
         value = st.number_input("Valor do saque", min_value=0.00)
         if st.button("Confirmar Saque"):
             if value < 0.01:
-                st.error("Por favor, insira um valor válido para o saque.")
+                st.error("Valor inválido.")
             elif get_balance(user["id"]) < value:
                 st.error("Saldo insuficiente.")
             else:
                 record_transaction(user["id"], -value, "saque")
-                st.success("Saque realizado com sucesso!")
+                st.success("Saque realizado!")
 
     elif page == "Transferir":
         custom_subheader("🔄 Transferência")
@@ -253,7 +226,7 @@ if st.session_state.logged_user:
         value = st.number_input("Valor da transferência", min_value=0.00)
         if st.button("Confirmar Transferência"):
             if value < 0.01:
-                st.error("Por favor, insira um valor válido para a transferência.")
+                st.error("Valor inválido.")
             else:
                 recipient = next((u for u in users if u["cpf"] == dest_cpf), None)
                 if not recipient:
@@ -265,42 +238,17 @@ if st.session_state.logged_user:
                     record_transaction(recipient["id"], value, "transferência", f"De {user['name']}")
                     st.success("Transferência realizada com sucesso!")
 
-
     elif page == "Extrato":
-        custom_subheader("📄 Extrato de Movimentações")
+        custom_subheader("📄 Extrato")
         extrato = get_statement(user["id"])
         if extrato:
             for txn in extrato:
-                st.write(f"{txn['date'].strftime('%d/%m/%Y %H:%M:%S')} - {txn['type'].capitalize()}: R$ {txn['amount']:.2f} - {txn['description']}")
+                st.write(f"{txn['date'].strftime('%d/%m/%Y %H:%M')} - {txn['type'].capitalize()}: R$ {txn['amount']:.2f} - {txn['description']}")
         else:
-            st.info("Nenhuma movimentação encontrada.")
+            st.info("Nenhuma transação registrada.")
 
     elif page == "Editar Perfil":
-        custom_subheader("✏️ Editar Perfil")
-        new_name = st.text_input("Novo Nome", value=user["name"])
-        new_email = st.text_input("Novo Email", value=user["email"])
-        current_password = st.text_input("Senha Atual", type="password")
-        new_password = st.text_input("Nova Senha", type="password")
-
-        if st.button("Salvar Alterações"):
-            if not new_name.strip() or not new_email.strip():
-                st.warning("Nome e email são obrigatórios.")
-            elif user["password"] != hash_password(current_password):
-                st.error("Senha atual incorreta.")
-            elif not validar_nome(new_name):
-                st.error("Nome inválido.")
-            elif new_email != user["email"] and find_user(new_email):
-                st.warning("Email já cadastrado.")
-            elif not validar_email(new_email):
-                st.warning("Email inválido. Verifique o formato.")
-            elif new_password and current_password == new_password:
-                st.warning("Senha nova não pode ser igual a anterior.")
-            else:
-                user["name"] = new_name
-                user["email"] = new_email
-                if new_password:
-                    user["password"] = hash_password(new_password)
-                st.success("Perfil atualizado com sucesso!")
+        custom_subheader("🛠️ Em breve: Edição de Perfil")
 
     elif page == "Sair":
         st.session_state.logged_user = None
