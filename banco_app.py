@@ -158,7 +158,7 @@ if not st.session_state.logged_user:
 
         # Captura os valores dos campos diretamente do session_state
         reg_name = st.text_input("Nome", value=st.session_state.reg_name)
-        reg_cpf = st.text_input("CPF (Formato: 111.111.111-11)", value=st.session_state.reg_cpf)
+        reg_cpf = st.text_input("CPF (Formato: xxx.xxx.xxx-xx)", value=st.session_state.reg_cpf)
         reg_email = st.text_input("Email", value=st.session_state.reg_email)
         reg_password = st.text_input("Senha", type="password", value=st.session_state.reg_password)
 
@@ -283,17 +283,17 @@ if st.session_state.logged_user:
         new_password = st.text_input("Nova Senha", type="password")
 
         if st.button("Salvar Alterações"):
-            if user["password"] != hash_password(current_password):
+            if not new_name.strip() or not new_email.strip():
+                st.warning("Nome e email são obrigatórios.")
+            elif user["password"] != hash_password(current_password):
                 st.error("Senha atual incorreta.")
             elif not validar_nome(new_name):
                 st.error("Nome inválido.")
-            elif find_user(new_email):
+            elif new_email != user["email"] and find_user(new_email):
                 st.warning("Email já cadastrado.")
             elif not validar_email(new_email):
                 st.warning("Email inválido. Verifique o formato.")
-            elif not (new_name and new_email and current_password and new_password):
-                st.warning("Preencha todos os campos.")
-            elif  current_password == new_password:
+            elif new_password and current_password == new_password:
                 st.warning("Senha nova não pode ser igual a anterior.")
             else:
                 user["name"] = new_name
