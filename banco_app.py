@@ -117,6 +117,11 @@ def validar_email(email):
     regex_email = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
     return re.match(regex_email, email)
 
+# --- Função para validar Nome ---
+def validar_nome(nome):
+    # O nome deve ter apenas letras (com acentos) e espaços, e ao menos 2 caracteres
+    return re.fullmatch(r"[A-Za-zÀ-ÿ\s]{2,}", nome.strip()) is not None
+
 # --- Interface Streamlit ---
 st.set_page_config(page_title="Banco Digital", layout="centered")
 custom_title("🏦 Sistema Bancário Digital Simplificado")
@@ -166,6 +171,8 @@ if not st.session_state.logged_user:
         if st.button("Cadastrar"):
             if find_user(reg_email):
                 st.warning("Email já cadastrado.")
+            elif not validar_nome(reg_name):
+                st.warning("Nome inválido. Use apenas letras e espaços.")
             elif any(u["cpf"] == reg_cpf for u in users):  # Verifica se o CPF já está cadastrado
                 st.warning("CPF já cadastrado.")
             elif not (reg_name and reg_cpf and reg_email and reg_password):
