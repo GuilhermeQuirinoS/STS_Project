@@ -143,6 +143,8 @@ if not st.session_state.logged_user:
         if st.button("Cadastrar"):
             if find_user(reg_email):
                 st.warning("Email já cadastrado.")
+            elif any(u["cpf"] == reg_cpf for u in users):  # Verifica se o CPF já está cadastrado
+                st.warning("CPF já cadastrado.")
             elif not (reg_name and reg_cpf and reg_email and reg_password):
                 st.warning("Preencha todos os campos.")
             elif not validar_cpf(reg_cpf):
