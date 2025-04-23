@@ -215,35 +215,44 @@ if st.session_state.logged_user:
 
     elif page == "Depositar":
         custom_subheader("➕ Depósito")
-        value = st.number_input("Valor do depósito", min_value=0.01)
+        value = st.number_input("Valor do depósito", min_value=0.00)
         if st.button("Confirmar Depósito"):
-            record_transaction(user["id"], value, "depósito")
-            st.success("Depósito realizado com sucesso!")
+            if value < 0.01:
+                st.error("Por favor, insira um valor válido para o depósito.")
+            else:
+                record_transaction(user["id"], value, "depósito")
+                st.success("Depósito realizado com sucesso!")
 
     elif page == "Sacar":
         custom_subheader("➖ Saque")
-        value = st.number_input("Valor do saque", min_value=0.01)
+        value = st.number_input("Valor do saque", min_value=0.00)
         if st.button("Confirmar Saque"):
-            if get_balance(user["id"]) >= value:
+            if value < 0.01:
+                st.error("Por favor, insira um valor válido para o saque.")
+            elif get_balance(user["id"]) < value:
+                st.error("Saldo insuficiente.")
+            else:
                 record_transaction(user["id"], -value, "saque")
                 st.success("Saque realizado com sucesso!")
-            else:
-                st.error("Saldo insuficiente.")
 
     elif page == "Transferir":
         custom_subheader("🔄 Transferência")
         dest_cpf = st.text_input("CPF do destinatário")
-        value = st.number_input("Valor da transferência", min_value=0.01)
+        value = st.number_input("Valor da transferência", min_value=0.00)
         if st.button("Confirmar Transferência"):
-            recipient = next((u for u in users if u["cpf"] == dest_cpf), None)
-            if not recipient:
-                st.error("Destinatário não encontrado.")
-            elif get_balance(user["id"]) < value:
-                st.error("Saldo insuficiente.")
+            if value < 0.01:
+                st.error("Por favor, insira um valor válido para a transferência.")
             else:
-                record_transaction(user["id"], -value, "transferência", f"Para {recipient['name']}")
-                record_transaction(recipient["id"], value, "transferência", f"De {user['name']}")
-                st.success("Transferência realizada com sucesso!")
+                recipient = next((u for u in users if u["cpf"] == dest_cpf), None)
+                if not recipient:
+                    st.error("Destinatário não encontrado.")
+                elif get_balance(user["id"]) < value:
+                    st.error("Saldo insuficiente.")
+                else:
+                    record_transaction(user["id"], -value, "transferência", f"Para {recipient['name']}")
+                    record_transaction(recipient["id"], value, "transferência", f"De {user['name']}")
+                    st.success("Transferência realizada com sucesso!")
+
 
     elif page == "Extrato":
         custom_subheader("📄 Extrato de Movimentações")
